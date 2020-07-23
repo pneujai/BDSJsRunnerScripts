@@ -8,7 +8,7 @@
  * @author PneuJai
  * @link https://pneujai.github.io/
  * @project PneuJai's Sign Edit
- * @version 1.0.0
+ * @version 1.0.1
  * @dependencies PneuJai's Nbt API, PneuJai's Form API
  *
 */
@@ -43,11 +43,10 @@ setBeforeActListener("onUseItem", function (eventDataRaw) {
 	if (!(pluginConfig["ops-only"] && JSON.parse(getPlayerPermissionAndGametype(eventData.uuid)).permission < 2) && JSON.parse(getPlayerPermissionAndGametype(eventData.uuid)).permission >= 1 && eventData.itemid === pluginConfig["keyitem-id"] && eventData.itemaux === pluginConfig["keyitem-meta"]) {
 		let targetBlock = NBT.parseFromNBTString(getStructure(eventData.dimensionid, JSON.stringify({ "x": eventData.position.x, "y": eventData.position.y + 1, "z": eventData.position.z }), JSON.stringify({ "x": eventData.position.x, "y": eventData.position.y + 1, "z": eventData.position.z }), false, true));
 		let targetBlockName = targetBlock.getNamedTagEntry("structure").getNamedTagEntry("palette").getNamedTagEntry("default").getNamedTagEntry("block_palette").getValue()[0].getNamedTagEntry("name").getValue();
-		if (targetBlockName === "minecraft:standing_sign" || targetBlockName === "minecraft:wall_sign") {
+		if (targetBlockName === "minecraft:standing_sign" || targetBlockName === "minecraft:wall_sign" || targetBlockName === "minecraft:spruce_standing_sign" || targetBlockName === "minecraft:spruce_wall_sign" || targetBlockName === "minecraft:birch_standing_sign" || targetBlockName === "minecraft:birch_wall_sign" || targetBlockName === "minecraft:jungle_standing_sign" || targetBlockName === "minecraft:jungle_wall_sign" || targetBlockName === "minecraft:acacia_standing_sign" || targetBlockName === "minecraft:acacia_wall_sign" || targetBlockName === "minecraft:darkoak_standing_sign" || targetBlockName === "minecraft:darkoak_wall_sign" || targetBlockName === "minecraft:crimson_standing_sign" || targetBlockName === "minecraft:crimson_wall_sign" || targetBlockName === "minecraft:warped_standing_sign" || targetBlockName === "minecraft:warped_wall_sign") {
 			if (!pluginTmp.playersInSignEdit.includes(eventData.uuid)) {
 				pluginTmp.playersInSignEdit.push(eventData.uuid);
 				let signTextLines = targetBlock.getNamedTagEntry("structure").getNamedTagEntry("palette").getNamedTagEntry("default").getNamedTagEntry("block_position_data").getValue()[0].getNamedTagEntry("block_entity_data").getNamedTagEntry("Text").getValue().split("\n");
-				log(targetBlock.getNamedTagEntry("structure").getNamedTagEntry("palette").getNamedTagEntry("default").getNamedTagEntry("block_position_data").getValue()[0].getNamedTagEntry("block_entity_data").getNamedTagEntry("Text").getValue());
 				pluginTmp.signEditData[eventData.uuid] = { "x": eventData.position.x, "y": eventData.position.y + 1, "z": eventData.position.z };
 				let signEditForm = new CustomForm();
 				signEditForm.setTitle("Sign Edit");
@@ -56,11 +55,10 @@ setBeforeActListener("onUseItem", function (eventDataRaw) {
 				}
 				let signEditFormId = signEditForm.sendToPlayer(eventData.uuid);
 				pluginTmp.signEditFormCallback[signEditFormId] = function(eventData) {
-					log(JSON.stringify(eventData));
 					if (eventData.selected !== "null") {
 						let targetBlock = NBT.parseFromNBTString(getStructure(eventData.dimensionid, JSON.stringify(pluginTmp.signEditData[eventData.uuid]), JSON.stringify(pluginTmp.signEditData[eventData.uuid]), false, true));
 						targetBlock.getNamedTagEntry("structure").getNamedTagEntry("palette").getNamedTagEntry("default").getNamedTagEntry("block_position_data").getValue()[0].getNamedTagEntry("block_entity_data").getNamedTagEntry("Text").setValue(JSON.parse(eventData.selected).join("\n"));
-						log(setStructure(targetBlock.toString(), eventData.dimensionid, JSON.stringify(pluginTmp.signEditData[eventData.uuid]), 0, false, true));
+						setStructure(targetBlock.toString(), eventData.dimensionid, JSON.stringify(pluginTmp.signEditData[eventData.uuid]), 0, false, true);
 					}
 					delete pluginTmp.signEditData[eventData.uuid];
 					delete pluginTmp.signEditFormCallback[signEditFormId];
