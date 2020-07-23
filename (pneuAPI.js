@@ -8,7 +8,7 @@
  * @author PneuJai
  * @link https://pneujai.github.io/
  * @project PneuJai's BDSJsRunner API
- * @version 1.0.0
+ * @version 0.0.1
  * @usage runScript(getShareData("loadPneuAPI"));
  *
 */
