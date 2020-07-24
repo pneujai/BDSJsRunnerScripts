@@ -45,10 +45,10 @@ if (Debugger.enabled) {
 		}
 	}
 	setBeforeActListener("onServerCmd", function (eventDataRaw) {
-		let eventData = JSON.parse(eventDataRaw);
-		eventData.command = parseCommand(eventData.cmd);
+		let eventData = JSON.escapeAndParse(eventDataRaw);
+		eventData.command = new Command(eventData.cmd);
 		if (Debugger.debugging) {
-			runScript(log(eventData.command.raw));
+			log(runScript(eventData.command.raw));
 			return false;
 		}
 		switch (eventData.command.method) {
@@ -60,6 +60,21 @@ if (Debugger.enabled) {
 		}
 	});
 }
+
+setShareData("pneuAPI_PlayerMap", JSON.stringify([]));
+setAfterActListener("onLoadName", function(eventDataRaw) {
+	let eventData = JSON.escapeAndParse(eventDataRaw);
+	let playerMap = JSON.escapeAndParse(getShareData("pneuAPI_PlayerMap"));
+	playerMap[eventData.uuid] = eventData.playername;
+	setShareData("pneuAPI_PlayerMap", JSON.stringify(playerMap));
+});
+
+setAfterActListener("onPlayerLeft", function(eventDataRaw) {
+	let eventData = JSON.escapeAndParse(eventDataRaw);
+	let playerMap = JSON.escapeAndParse(getShareData("pneuAPI_PlayerMap"));
+	delete playerMap[eventData.uuid];
+	setShareData("pneuAPI_PlayerMap", JSON.stringify(playerMap));
+});
 
 const pneuAPI = {};
 function setInterval(code, millisec) {
@@ -398,18 +413,7 @@ class NBT {
 		return NBT.createTag(type, name, value);
 	}
 	static parseFromNBTString(text) {
-		let jsonRaw = text;
-		let jsonRawToBeEscaped;
-		let jsonRawQuoted = jsonRaw.match(/"[\s\S]*?"/g) ?? [];
-		jsonRawToBeEscaped = jsonRawQuoted.filter(function (element) { return element.match(/\n/g) !== null; });
-		for (let i = 0; i < jsonRawToBeEscaped.length; i++) {
-			jsonRaw = jsonRaw.replace(jsonRawToBeEscaped[i], jsonRawToBeEscaped[i].replace(/\n/gm, "\\\\n"));
-		}
-		jsonRawToBeEscaped = jsonRawQuoted.filter(function (element) { return element.match(/\r/g) !== null; });
-		for (let i = 0; i < jsonRawToBeEscaped.length; i++) {
-			jsonRaw = jsonRaw.replace(jsonRawToBeEscaped[i], jsonRawToBeEscaped[i].replace(/\r/gm, "\\\\r"));
-		}
-		let json = JSON.parse(jsonRaw);
+		let json = JSON.escapeAndParse(text);
 		let type = json.cv !== undefined ? json.cv.tt : json.tt;
 		let name = json.ck !== undefined ? json.ck : "";
 		json.value = json.cv !== undefined ? json.cv.tv : json.tv;
@@ -966,7 +970,6 @@ class Player {
 	constructor(uuid) {
 		this.uuid = uuid;
 		this.xuid = this.getXUIDByUUID(this.uuid);
-		this.playername = this.getPlayernameByUUID(this.uuid);
 	}
 	static getUUIDByPlayername(playername) {
 		if ((playername === undefined) || (playername === null)) {
@@ -974,7 +977,7 @@ class Player {
 		}
 		let onlinePlayersRaw = getOnLinePlayers();
 		if (onlinePlayersRaw !== "null" && onlinePlayersRaw !== "null\n") {
-			let onlinePlayers = JSON.parse(onlinePlayersRaw);
+			let onlinePlayers = JSON.escapeAndParse(onlinePlayersRaw);
 			return onlinePlayers.find(function (element) { return (element.playername === playername); }).uuid;
 		}
 		return undefined;
@@ -985,7 +988,7 @@ class Player {
 		}
 		let onlinePlayersRaw = getOnLinePlayers();
 		if (onlinePlayersRaw !== "null" && onlinePlayersRaw !== "null\n") {
-			let onlinePlayers = JSON.parse(onlinePlayersRaw);
+			let onlinePlayers = JSON.escapeAndParse(onlinePlayersRaw);
 			return onlinePlayers.find(function (element) { return (element.playername === playername); }).uuid;
 		}
 		return undefined;
@@ -996,7 +999,7 @@ class Player {
 		}
 		let onlinePlayersRaw = getOnLinePlayers();
 		if (onlinePlayersRaw !== "null" && onlinePlayersRaw !== "null\n") {
-			let onlinePlayers = JSON.parse(onlinePlayersRaw);
+			let onlinePlayers = JSON.escapeAndParse(onlinePlayersRaw);
 			return onlinePlayers.find(function (element) { return (element.uuid === uuid); }).playername;
 		}
 		return undefined;
@@ -1007,7 +1010,7 @@ class Player {
 		}
 		let onlinePlayersRaw = getOnLinePlayers();
 		if (onlinePlayersRaw !== "null" && onlinePlayersRaw !== "null\n") {
-			let onlinePlayers = JSON.parse(onlinePlayersRaw);
+			let onlinePlayers = JSON.escapeAndParse(onlinePlayersRaw);
 			return onlinePlayers.find(function (element) { return (element.uuid === uuid); }).xuid;
 		}
 		return undefined;
@@ -1018,7 +1021,7 @@ class Player {
 		}
 		let onlinePlayersRaw = getOnLinePlayers();
 		if (onlinePlayersRaw !== "null" && onlinePlayersRaw !== "null\n") {
-			let onlinePlayers = JSON.parse(onlinePlayersRaw);
+			let onlinePlayers = JSON.escapeAndParse(onlinePlayersRaw);
 			return onlinePlayers.find(function (element) { return (element.xuid === xuid); }).playername;
 		}
 		return undefined;
@@ -1029,7 +1032,7 @@ class Player {
 		}
 		let onlinePlayersRaw = getOnLinePlayers();
 		if (onlinePlayersRaw !== "null" && onlinePlayersRaw !== "null\n") {
-			let onlinePlayers = JSON.parse(onlinePlayersRaw);
+			let onlinePlayers = JSON.escapeAndParse(onlinePlayersRaw);
 			return onlinePlayers.find(function (element) { return (element.xuid === xuid); }).uuid;
 		}
 		return undefined;
@@ -1037,7 +1040,7 @@ class Player {
 	getAbility(key) {
 		let playerAbilitiesRaw = getPlayerAbilities(this.uuid);
 		if (playerAbilitiesRaw !== undefined) {
-			let playerAbilities = JSON.parse(playerAbilitiesRaw);
+			let playerAbilities = JSON.escapeAndParse(playerAbilitiesRaw);
 			return playerAbilities[key];
 		}
 		return undefined;
@@ -1050,7 +1053,7 @@ class Player {
 	getAttribute(key) {
 		let playerTempAttributesRaw = getPlayerTempAttributes(this.uuid);
 		if (playerTempAttributesRaw !== undefined) {
-			let playerTempAttributes = JSON.parse(playerTempAttributesRaw);
+			let playerTempAttributes = JSON.escapeAndParse(playerTempAttributesRaw);
 			return playerTempAttributes[key];
 		}
 		return undefined;
@@ -1063,7 +1066,7 @@ class Player {
 	getMaxAttribute(key) {
 		let playerMaxAttributesRaw = getPlayerMaxAttributesRaw(this.uuid);
 		if (playerMaxAttributesRaw !== undefined) {
-			let playerMaxAttributes = JSON.parse(playerMaxAttributesRaw);
+			let playerMaxAttributes = JSON.escapeAndParse(playerMaxAttributesRaw);
 			return playerMaxAttributes[key];
 		}
 		return undefined;
@@ -1076,7 +1079,7 @@ class Player {
 	getDimension() {
 		let playerRaw = selectPlayer(this.uuid);
 		if (playerRaw !== undefined) {
-			let player = JSON.parse(playerRaw);
+			let player = JSON.escapeAndParse(playerRaw);
 			return player.dimensionid;
 		}
 		return undefined;
@@ -1084,7 +1087,7 @@ class Player {
 	getPosition() {
 		let playerRaw = selectPlayer(this.uuid);
 		if (playerRaw !== undefined) {
-			let player = JSON.parse(playerRaw);
+			let player = JSON.escapeAndParse(playerRaw);
 			return player.XYZ;
 		}
 		return undefined;
@@ -1092,7 +1095,7 @@ class Player {
 	getDisplayPosition() {
 		let playerRaw = selectPlayer(this.uuid);
 		if (playerRaw !== undefined) {
-			let player = JSON.parse(playerRaw);
+			let player = JSON.escapeAndParse(playerRaw);
 			return {"x": parseInt(player.XYZ.x), "y": parseInt(player.XYZ.y - 1), "z": parseInt(player.XYZ.z)};
 		}
 		return undefined;
@@ -1103,10 +1106,13 @@ class Player {
 	setDisplayName(value) {
 		return reNameByUuid(this.uuid, value)
 	}
+	getOriginalName() {
+		return JSON.escapeAndParse(getShareData("pneuAPI_PlayerMap"))[this.uuid];
+	}
 	getGamemode() {
 		let playerPermissionAndGametypeRaw = getPlayerPermissionAndGametype(this.uuid);
 		if (playerPermissionAndGametypeRaw !== undefined) {
-			playerPermissionAndGametype = JSON.parse(playerPermissionAndGametypeRaw);
+			playerPermissionAndGametype = JSON.escapeAndParse(playerPermissionAndGametypeRaw);
 			return playerPermissionAndGametype.gametype;
 		}
 		return undefined;
@@ -1119,7 +1125,7 @@ class Player {
 	getPermissionLevel() {
 		let playerPermissionAndGametypeRaw = getPlayerPermissionAndGametype(this.uuid);
 		if (playerPermissionAndGametypeRaw !== undefined) {
-			playerPermissionAndGametype = JSON.parse(playerPermissionAndGametypeRaw);
+			playerPermissionAndGametype = JSON.escapeAndParse(playerPermissionAndGametypeRaw);
 			return playerPermissionAndGametype.permission;
 		}
 		return undefined;
@@ -1132,7 +1138,7 @@ class Player {
 	getOpLevel() {
 		let playerPermissionAndGametypeRaw = getPlayerPermissionAndGametype(this.uuid);
 		if (playerPermissionAndGametypeRaw !== undefined) {
-			playerPermissionAndGametype = JSON.parse(playerPermissionAndGametypeRaw);
+			playerPermissionAndGametype = JSON.escapeAndParse(playerPermissionAndGametypeRaw);
 			return playerPermissionAndGametype.oplevel;
 		}
 		return undefined;
@@ -1148,7 +1154,7 @@ class Player {
 	isAlive() {
 		let playerAttributesRaw = getPlayerAttributes(this.uuid);
 		if (playerAttributesRaw !== undefined) {
-			let playerAttributes = JSON.parse(playerAttributesRaw);
+			let playerAttributes = JSON.escapeAndParse(playerAttributesRaw);
 			return playerAttributes.health > 0;
 		}
 		return false;
@@ -1156,7 +1162,7 @@ class Player {
 	isStanding() {
 		let playerRaw = selectPlayer(this.uuid);
 		if (playerRaw !== undefined) {
-			let player = JSON.parse(playerRaw);
+			let player = JSON.escapeAndParse(playerRaw);
 			return player.isstand;
 		}
 		return undefined;
@@ -1164,7 +1170,7 @@ class Player {
 	isFlying() {
 		let abilitiesRaw = getPlayerAbilities(this.uuid);
 		if (abilitiesRaw !== undefined) {
-			let abilities = JSON.parse(abilitiesRaw);
+			let abilities = JSON.escapeAndParse(abilitiesRaw);
 			return abilities.flying;
 		}
 		return undefined;
@@ -1178,7 +1184,7 @@ class Player {
 	isOp() {
 		let permissionAndGametypeRaw = getPlayerPermissionAndGametype(this.uuid);
 		if (permissionAndGametypeRaw !== undefined) {
-			let permissionAndGametype = JSON.parse(permissionAndGametypeRaw);
+			let permissionAndGametype = JSON.escapeAndParse(permissionAndGametypeRaw);
 			return permissionAndGametype.permission === 2;
 		}
 		return undefined;
@@ -1186,7 +1192,7 @@ class Player {
 	isWhitelisted() {
 		let whitelistRaw = fileReadAllText("whitelist.json");
 		if (whitelistRaw !== undefined) {
-			let whitelist = JSON.parse(whitelistRaw);
+			let whitelist = JSON.escapeAndParse(whitelistRaw);
 			if (whitelist.find(function(element) { return element.xuid == this.xuid; }) !== undefined) {
 				return true
 			}
@@ -1224,7 +1230,7 @@ class Player {
 	getInventory(inventory) {
 		let playerItemsRaw = getPlayerItems(this.uuid);
 		if (playerItemsRaw !== undefined) {
-			let playerItems = JSON.parse(playerItemsRaw);
+			let playerItems = JSON.escapeAndParse(playerItemsRaw);
 			switch (inventory) {
 				case "armor":
 					return NBT.parseFromNBTString(JSON.stringify(playerItems["Armor"]));
@@ -1235,7 +1241,7 @@ class Player {
 				case "mainhand":
 					let playerSelectedItemRaw = getPlayerSelectedItem(this.uuid);
 					if (playerSelectedItemRaw !== undefined) {
-						let playerSelectedItem = JSON.parse(playerSelectedItemRaw);
+						let playerSelectedItem = JSON.escapeAndParse(playerSelectedItemRaw);
 						return NBT.parseFromNBTString(JSON.stringify(playerSelectedItem["selecteditem"]));
 					}
 					return undefined;
@@ -1268,13 +1274,16 @@ class Player {
 	}
 }
 pneuAPI.Player = Player;
-class Level {
+class Block {
 	constructor(name) {
 		
 	}
 }
 pneuAPI.Block = Block;
 class Level {
+	static getBlock(x, y, z, dimension) {
+		return getStructure(dimension, JSON.stringify({ "x": x, "y": y + 1, "z": z }), JSON.stringify({ "x": x, "y": y + 1, "z": z }), false, true);
+	}
 	static setBlock(x, y, z, dimension, block) {
 		
 	}
