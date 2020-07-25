@@ -48,7 +48,7 @@ if (Debugger.enabled) {
 		let eventData = JSON.escapeAndParse(eventDataRaw);
 		eventData.command = new Command(eventData.cmd);
 		if (Debugger.debugging) {
-			log(runScript(eventData.command.raw));
+			log(runScript(eventData.cmd));
 			return false;
 		}
 		switch (eventData.command.method) {
