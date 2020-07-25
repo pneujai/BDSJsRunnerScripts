@@ -38,7 +38,7 @@ if (Debugger.enabled) {
 	Debugger.debugging = false;
 	setBeforeActListener("onServerCmd", function (eventDataRaw) {
 		let eventData = JSON.escapeAndParse(eventDataRaw);
-		if (eventData.cmd[0] === ">") {
+		if (eventData.cmd.startsWith("/>")) {
 			log(runScript(eventData.cmd.substring(1)));
 			return false;
 		}
