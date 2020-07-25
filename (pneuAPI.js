@@ -1355,7 +1355,7 @@ class Server {
 		setShareData("pneuAPI_Tmp", JSON.stringify(pneuAPI_Tmp));
 	}
 }
-pneuAPI.Server = Level;
+pneuAPI.Server = Server;
 class Block {
 	constructor(name) {
 		
