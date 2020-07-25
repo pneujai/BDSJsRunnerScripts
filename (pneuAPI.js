@@ -36,27 +36,11 @@ request("http://61.239.26.108:3390/projects/update_check.php", "GET", "id=mcjsr.
 });
 if (Debugger.enabled) {
 	Debugger.debugging = false;
-	function exit() {
-		if (Debugger.debugging) {
-			Debugger.debugging = false;
-			log("Stopped debugger");
-		} else {
-			log("Debugger not started");
-		}
-	}
 	setBeforeActListener("onServerCmd", function (eventDataRaw) {
 		let eventData = JSON.escapeAndParse(eventDataRaw);
-		eventData.command = new Command(eventData.cmd);
-		if (Debugger.debugging) {
-			log(runScript(eventData.cmd));
+		if (eventData.cmd[0] === ">") {
+			log(runScript(eventData.cmd.substring(1)));
 			return false;
-		}
-		switch (eventData.command.method) {
-			case "debug":
-				Debugger.debugging = true;
-				log("Started debugger");
-				return false;
-				break; 
 		}
 	});
 }
