@@ -8,7 +8,7 @@
  * @author PneuJai
  * @link https://pneujai.github.io/
  * @project PneuJai's BDSJsRunner API
- * @version 0.0.1
+ * @version 0.0.2
  * @usage runScript(getShareData("loadPneuAPI"));
  *
 */
@@ -61,19 +61,36 @@ if (Debugger.enabled) {
 	});
 }
 
-setShareData("pneuAPI_PlayerMap", JSON.stringify([]));
+let defaultTmp = {
+	"playerMap": {},
+	"serverLock": false,
+	"serverForward": {
+		"enabled": false,
+		"ip": "",
+		"port": 0
+	}
+};
+setShareData("pneuAPI_Tmp", JSON.stringify(defaultTmp));
+setShareData("pneuAPI_ServerLock", "true");
+setShareData("pneuAPI_ServerForward", "null");
 setAfterActListener("onLoadName", function(eventDataRaw) {
 	let eventData = JSON.escapeAndParse(eventDataRaw);
-	let playerMap = JSON.escapeAndParse(getShareData("pneuAPI_PlayerMap"));
-	playerMap[eventData.uuid] = eventData.playername;
-	setShareData("pneuAPI_PlayerMap", JSON.stringify(playerMap));
+	let pneuAPI_Tmp = JSON.escapeAndParse(getShareData("pneuAPI_Tmp"));
+	pneuAPI_Tmp.playerMap[eventData.uuid] = eventData.playername;
+	setShareData("pneuAPI_Tmp", JSON.stringify(pneuAPI_Tmp));
+	if (pneuAPI_Tmp.serverLock) {
+		transferserver(eventData.uuid, "", 0);
+	}
+	if (pneuAPI_Tmp.serverForward.enabled) {
+		transferserver(eventData.uuid, pneuAPI_Tmp.serverForward.ip, pneuAPI_Tmp.serverForward.port);
+	}
 });
 
 setAfterActListener("onPlayerLeft", function(eventDataRaw) {
 	let eventData = JSON.escapeAndParse(eventDataRaw);
-	let playerMap = JSON.escapeAndParse(getShareData("pneuAPI_PlayerMap"));
-	delete playerMap[eventData.uuid];
-	setShareData("pneuAPI_PlayerMap", JSON.stringify(playerMap));
+	let pneuAPI_Tmp = JSON.escapeAndParse(getShareData("pneuAPI_Tmp"));
+	delete pneuAPI_Tmp.playerMap[eventData.uuid];
+	setShareData("pneuAPI_Tmp", JSON.stringify(pneuAPI_Tmp));
 });
 
 const pneuAPI = {};
@@ -1215,6 +1232,9 @@ class Player {
 	kill() {
 		return this.setAttribute("health", 0);
 	}
+	kick() {
+		return runcmd(`kick "${this.getDisplayName()}"`);
+	}
 	mute() {
 		return this.setAbility("mute", true);
 	}
@@ -1274,6 +1294,68 @@ class Player {
 	}
 }
 pneuAPI.Player = Player;
+class Server {
+	static stop() {
+		runcmd(`stop`);
+	}
+	static lock(timeout = 0) {
+		setShareData("pneuAPI_ServerLock", "true");
+		if (timeout !== 0) {
+			setTimeout(function() {
+				setShareData("pneuAPI_ServerLock", "false");
+			}, timeout);
+		}
+	}
+	static unlock(timeout) {
+		setShareData("pneuAPI_ServerLock", "false");
+		if (timeout !== 0) {
+			setTimeout(function() {
+				setShareData("pneuAPI_ServerLock", "true");
+			}, timeout);
+		}
+	}
+	static log(message) {
+		return logout(message);
+	}
+	static executeCommand(command) {
+		return runcmd(command);
+	}
+	static getProperties() {
+		let file = fileReadAllText("server.properties").replace(/#.*|;.*/g, "");
+		let properties = {};
+		for (let i = 0; i < file.match(/.*=/g).length; i++) {
+			properties[file.match(/.*=/g)[i].slice(0, -1)] = file.match(/=.*/g)[i].slice(1);
+		}
+		return properties;
+	}
+	static getWhitelist() {
+		return JSON.escapeAndParse(fileReadAllText("whitelist.json") ?? "[]");
+	}
+	static transferAllPlayers(address, port = 19132) {
+		let onlinePlayersRaw = getOnLinePlayers();
+		if (onlinePlayersRaw !== "null" && onlinePlayersRaw !== "null\n") {
+			let onlinePlayers = JSON.escapeAndParse(onlinePlayersRaw);
+			onlinePlayers.forEach(function(currentValue) {
+				return transferserver(currentValue.uuid, address, port);
+			});
+		}
+		return false;
+	}
+	static setTransferForward(address, port = 19132) {
+		let pneuAPI_Tmp = JSON.escapeAndParse(getShareData("pneuAPI_Tmp"));
+		pneuAPI_Tmp.serverForward.enabled = true;
+		pneuAPI_Tmp.serverForward.ip = address;
+		pneuAPI_Tmp.serverForward.port = port;
+		setShareData("pneuAPI_Tmp", JSON.stringify(pneuAPI_Tmp));
+		this.transferAllPlayers(address, port);
+	}
+	static unsetTransferForward() {
+		let pneuAPI_Tmp = JSON.escapeAndParse(getShareData("pneuAPI_Tmp"));
+		pneuAPI_Tmp.serverForward.enabled = false;
+		setShareData("pneuAPI_Tmp", JSON.stringify(pneuAPI_Tmp));
+	}
+}
+pneuAPI.Server = Level;
 class Block {
 	constructor(name) {
 		
