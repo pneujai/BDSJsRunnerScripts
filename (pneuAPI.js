@@ -1299,18 +1299,22 @@ class Server {
 		runcmd(`stop`);
 	}
 	static lock(timeout = 0) {
-		setShareData("pneuAPI_ServerLock", "true");
+		let pneuAPI_Tmp = JSON.escapeAndParse(getShareData("pneuAPI_Tmp"));
+		pneuAPI_Tmp.serverLock = true;
+		setShareData("pneuAPI_Tmp", JSON.stringify(pneuAPI_Tmp))
 		if (timeout !== 0) {
 			setTimeout(function() {
-				setShareData("pneuAPI_ServerLock", "false");
+				this.unlock();
 			}, timeout);
 		}
 	}
-	static unlock(timeout) {
-		setShareData("pneuAPI_ServerLock", "false");
+	static unlock(timeout = 0) {
+		let pneuAPI_Tmp = JSON.escapeAndParse(getShareData("pneuAPI_Tmp"));
+		pneuAPI_Tmp.serverLock = false;
+		setShareData("pneuAPI_Tmp", JSON.stringify(pneuAPI_Tmp))
 		if (timeout !== 0) {
 			setTimeout(function() {
-				setShareData("pneuAPI_ServerLock", "true");
+				this.lock();
 			}, timeout);
 		}
 	}
