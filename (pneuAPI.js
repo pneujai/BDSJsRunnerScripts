@@ -51,7 +51,9 @@ setShareData("pneuAPI_Tmp", {
 		"enabled": false,
 		"ip": "",
 		"port": 0
-	}
+	},
+	"customCommands": {},
+	"commandAliases": {}
 });
 setAfterActListener("onLoadName", function(eventDataRaw) {
 	let eventData = JSON.escapeAndParse(eventDataRaw);
@@ -192,6 +194,9 @@ class Command {
 			}
 		}
 		*/
+	}
+	static registerCommand(method, action, permissionLevel, description = "") {
+		setCommandDescribe(method, description);
 	}
 }
 pneuAPI.Command = Command;
@@ -1027,7 +1032,7 @@ class Player {
 		return undefined;
 	}
 	static getPlayernameByXUID(xuid) {
-		if ((uuid === undefined) || (uuid === null)) {
+		if ((xuid === undefined) || (xuid === null)) {
 			return undefined;
 		}
 		let onlinePlayersRaw = getOnLinePlayers();
@@ -1038,7 +1043,7 @@ class Player {
 		return undefined;
 	}
 	static getUUIDByXUID(xuid) {
-		if ((uuid === undefined) || (uuid === null)) {
+		if ((xuid === undefined) || (xuid === null)) {
 			return undefined;
 		}
 		let onlinePlayersRaw = getOnLinePlayers();
@@ -1423,4 +1428,4 @@ class Level {
 }
 pneuAPI.Level = Level;
 setShareData("pneuAPI", pneuAPI);
-setShareData("loadPneuAPI", `JSON.escapeAndParse = getShareData("pneuAPI").escapeAndParse; Object.prototype.serialize = getShareData("pneuAPI").serialize; var setInterval = getShareData("pneuAPI").setInterval, Command = getShareData("pneuAPI").Command, SimpleForm = getShareData("pneuAPI").SimpleForm, ModalForm = getShareData("pneuAPI").ModalForm, CustomForm = getShareData("pneuAPI").CustomForm, NBT = getShareData("pneuAPI").NBT, NamedTag = getShareData("pneuAPI").NamedTag, ByteTag = getShareData("pneuAPI").ByteTag, ShortTag = getShareData("pneuAPI").ShortTag, IntTag = getShareData("pneuAPI").IntTag, LongTag = getShareData("pneuAPI").LongTag, FloatTag = getShareData("pneuAPI").FloatTag, DoubleTag = getShareData("pneuAPI").DoubleTag, ByteArrayTag = getShareData("pneuAPI").ByteArrayTag, StringTag = getShareData("pneuAPI").StringTag, ListTag = getShareData("pneuAPI").ListTag, CompoundTag = getShareData("pneuAPI").CompoundTag, IntArrayTag = getShareData("pneuAPI").IntArrayTag, Player = getShareData("pneuAPI").Player, Server = getShareData("pneuAPI").Server, Block = getShareData("pneuAPI").Block, Level = getShareData("pneuAPI").Level;);;`);
+setShareData("loadPneuAPI", `JSON.escapeAndParse = getShareData("pneuAPI").escapeAndParse; Object.prototype.serialize = getShareData("pneuAPI").serialize; var setInterval = getShareData("pneuAPI").setInterval, Command = getShareData("pneuAPI").Command, SimpleForm = getShareData("pneuAPI").SimpleForm, ModalForm = getShareData("pneuAPI").ModalForm, CustomForm = getShareData("pneuAPI").CustomForm, NBT = getShareData("pneuAPI").NBT, NamedTag = getShareData("pneuAPI").NamedTag, ByteTag = getShareData("pneuAPI").ByteTag, ShortTag = getShareData("pneuAPI").ShortTag, IntTag = getShareData("pneuAPI").IntTag, LongTag = getShareData("pneuAPI").LongTag, FloatTag = getShareData("pneuAPI").FloatTag, DoubleTag = getShareData("pneuAPI").DoubleTag, ByteArrayTag = getShareData("pneuAPI").ByteArrayTag, StringTag = getShareData("pneuAPI").StringTag, ListTag = getShareData("pneuAPI").ListTag, CompoundTag = getShareData("pneuAPI").CompoundTag, IntArrayTag = getShareData("pneuAPI").IntArrayTag, Player = getShareData("pneuAPI").Player, Server = getShareData("pneuAPI").Server, Block = getShareData("pneuAPI").Block, Level = getShareData("pneuAPI").Level;);`);
