@@ -1,5 +1,3 @@
-
-/*jshint esversion: 9 */
 /*
  *  ____                     ____  __   _
  * |  _ \  _ __   ___  _   _|_  _|/ / _|_|
@@ -10,14 +8,14 @@
  * @author PneuJai
  * @link https://pneujai.github.io/
  * @project PneuJai's BDSJsRunner API
- * @version 1.0.1
+ * @version 1.0.2
  * @usage runScript(getShareData("loadPneuAPI"));
  *
 */
 var Debugger = {};
 Debugger.enabled = true; //Enable debugger feature;
-log("Checking update for plugin...");
-request("http://61.239.26.108:3390/projects/update_check.php", "GET", "id=mcjsr.papi&version=1.0.1", function (response) {
+log(`[${TimeNow()} INFO] Checking update for plugin...`);
+request("http://61.239.26.108:3390/projects/update_check.php", "GET", "id=mcjsr.papi&version=1.0.2", function (response) {
 	if (response !== "") {
 		let pluginInfo = JSON.parse(response);
 		let current_version = pluginInfo["version_current"].split(".");
@@ -29,10 +27,10 @@ request("http://61.239.26.108:3390/projects/update_check.php", "GET", "id=mcjsr.
 					return;
 				}
 			}
-			log(`Plugin ${pluginInfo.name} is up to date!`);
+			log(`[${TimeNow()} INFO] Plugin ${pluginInfo.name} is up to date!`);
 		}
 	} else {
-		log("Failed to check for update.");
+		log(`[${TimeNow()} INFO] Failed to check for update.`);
 	}
 });
 if (Debugger.enabled) {
