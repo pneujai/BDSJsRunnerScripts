@@ -1,3 +1,5 @@
+
+/*jshint esversion: 9 */
 /*
  *  ____                     ____  __   _
  * |  _ \  _ __   ___  _   _|_  _|/ / _|_|
@@ -8,22 +10,21 @@
  * @author PneuJai
  * @link https://pneujai.github.io/
  * @project PneuJai's BDSJsRunner API
- * @version 0.0.2
+ * @version 1.0.1
  * @usage runScript(getShareData("loadPneuAPI"));
  *
 */
-
 var Debugger = {};
 Debugger.enabled = true; //Enable debugger feature;
 log("Checking update for plugin...");
-request("http://61.239.26.108:3390/projects/update_check.php", "GET", "id=mcjsr.papi&version=1.0.0", function (response) {
+request("http://61.239.26.108:3390/projects/update_check.php", "GET", "id=mcjsr.papi&version=1.0.1", function (response) {
 	if (response !== "") {
 		let pluginInfo = JSON.parse(response);
 		let current_version = pluginInfo["version_current"].split(".");
 		let latest_version = pluginInfo["version_latest"].split(".");
 		if (current_version.length === latest_version.length) {
 			for (let i = 0; i < current_version.length; i++) {
-				if (current_version[i] > latest_version[i]) {
+				if (current_version[i] < latest_version[i]) {
 					log(`Plugin ${pluginInfo.name} is outdated! Update it at ${pluginInfo.update_link}`);
 					return;
 				}
@@ -38,14 +39,14 @@ if (Debugger.enabled) {
 	Debugger.debugging = false;
 	setBeforeActListener("onServerCmd", function (eventDataRaw) {
 		let eventData = JSON.escapeAndParse(eventDataRaw);
-		if (eventData.cmd.startsWith("/>")) {
+		if (eventData.cmd.startsWith(">")) {
 			log(runScript(eventData.cmd.substring(1)));
 			return false;
 		}
 	});
 }
 
-let defaultTmp = {
+setShareData("pneuAPI_Tmp", {
 	"playerMap": {},
 	"serverLock": false,
 	"serverForward": {
@@ -53,13 +54,12 @@ let defaultTmp = {
 		"ip": "",
 		"port": 0
 	}
-};
-setShareData("pneuAPI_Tmp", JSON.stringify(defaultTmp));
+});
 setAfterActListener("onLoadName", function(eventDataRaw) {
 	let eventData = JSON.escapeAndParse(eventDataRaw);
-	let pneuAPI_Tmp = JSON.escapeAndParse(getShareData("pneuAPI_Tmp"));
+	let pneuAPI_Tmp = getShareData("pneuAPI_Tmp");
 	pneuAPI_Tmp.playerMap[eventData.uuid] = eventData.playername;
-	setShareData("pneuAPI_Tmp", JSON.stringify(pneuAPI_Tmp));
+	setShareData("pneuAPI_Tmp", pneuAPI_Tmp);
 	if (pneuAPI_Tmp.serverLock) {
 		transferserver(eventData.uuid, "", 0);
 	}
@@ -70,9 +70,9 @@ setAfterActListener("onLoadName", function(eventDataRaw) {
 
 setAfterActListener("onPlayerLeft", function(eventDataRaw) {
 	let eventData = JSON.escapeAndParse(eventDataRaw);
-	let pneuAPI_Tmp = JSON.escapeAndParse(getShareData("pneuAPI_Tmp"));
+	let pneuAPI_Tmp = getShareData("pneuAPI_Tmp");
 	delete pneuAPI_Tmp.playerMap[eventData.uuid];
-	setShareData("pneuAPI_Tmp", JSON.stringify(pneuAPI_Tmp));
+	setShareData("pneuAPI_Tmp", pneuAPI_Tmp);
 });
 
 const pneuAPI = {};
@@ -80,7 +80,7 @@ function setInterval(code, millisec) {
 	let timeoutfuncs = function() {
 		setTimeout(code, 0);
 		setTimeout(timeoutfuncs, millisec);
-	}
+	};
 	timeoutfuncs();
 }
 pneuAPI.setInterval = setInterval;
@@ -89,18 +89,32 @@ JSON.escapeAndParse = function(text, reviver = null) {
 	let jsonRaw = text;
 	let jsonRawToBeEscaped;
 	let jsonRawQuoted = jsonRaw.match(/"[\s\S]*?"/g) ?? [];
-	jsonRawToBeEscaped = jsonRawQuoted.filter(function (element) { return element.match(/\n/g) !== null; });
+	jsonRawToBeEscaped = jsonRawQuoted.filter(function (element) {
+		return element.match(/\n/g) !== null;
+	});
 	for (let i = 0; i < jsonRawToBeEscaped.length; i++) {
 		jsonRaw = jsonRaw.replace(jsonRawToBeEscaped[i], jsonRawToBeEscaped[i].replace(/\n/gm, "\\\\n"));
 	}
-	jsonRawToBeEscaped = jsonRawQuoted.filter(function (element) { return element.match(/\r/g) !== null; });
+	jsonRawToBeEscaped = jsonRawQuoted.filter(function (element) {
+		return element.match(/\r/g) !== null;
+	});
 	for (let i = 0; i < jsonRawToBeEscaped.length; i++) {
 		jsonRaw = jsonRaw.replace(jsonRawToBeEscaped[i], jsonRawToBeEscaped[i].replace(/\r/gm, "\\\\r"));
 	}
 	jsonRaw = jsonRaw.replace(/\/\/.*/gm, "").replace(/\/\*.*?\*\//gms, "");
 	return JSON.parse(jsonRaw, reviver);
-}
+};
 pneuAPI.escapeAndParse = JSON.escapeAndParse;
+
+Object.prototype.serialize = function() {
+	let result = [];
+	for (var item in this)
+	if (this.hasOwnProperty(item)) {
+		result.push(encodeURIComponent(item) + "=" + encodeURIComponent(this[item]));
+	}
+	return result.join("&");
+};
+pneuAPI.serialize = Object.prototype.serialize;
 
 class Command {
 	constructor(command = "") {
@@ -219,7 +233,7 @@ class SimpleForm {
 		}
 		this.buttons.push(content);
 	}
-};
+}
 
 pneuAPI.SimpleForm = SimpleForm;
 class ModalForm {
@@ -252,15 +266,15 @@ class ModalForm {
 		this.button1 = String(text);
 	}
 	getButton1(text) {
-		return this.button1
+		return this.button1;
 	}
 	setButton2(text) {
 		this.button2 = String(text);
 	}
 	getButton2(text) {
-		return this.button2
+		return this.button2;
 	}
-};
+}
 
 pneuAPI.ModalForm = ModalForm;
 class CustomForm {
@@ -339,10 +353,10 @@ class CustomForm {
 	addContent(content) {
 		this.content.push(content);
 	}
-};
+}
 pneuAPI.CustomForm = CustomForm;
 class NBT {
-	static TAG_End = 0;
+  static TAG_End = 0;
 	static TAG_Byte = 1;
 	static TAG_Short = 2;
 	static TAG_Int = 3;
@@ -1103,7 +1117,7 @@ class Player {
 		return this.getPlayernameByUUID(this.uuid);
 	}
 	setDisplayName(value) {
-		return reNameByUuid(this.uuid, value)
+		return reNameByUuid(this.uuid, value);
 	}
 	getOriginalName() {
 		return JSON.escapeAndParse(getShareData("pneuAPI_PlayerMap"))[this.uuid];
@@ -1193,7 +1207,7 @@ class Player {
 		if (whitelistRaw !== undefined) {
 			let whitelist = JSON.escapeAndParse(whitelistRaw);
 			if (whitelist.find(function(element) { return element.xuid == this.xuid; }) !== undefined) {
-				return true
+				return true;
 			}
 		}
 		return false;
@@ -1277,13 +1291,59 @@ class Player {
 }
 pneuAPI.Player = Player;
 class Server {
+	static getOnlinePlayers() {
+		let onlinePlayersRaw = getOnLinePlayers();
+		if (onlinePlayersRaw !== "null" && onlinePlayersRaw !== "null\n") {
+			return JSON.escapeAndParse(onlinePlayersRaw);
+		}
+		return null;
+	}
+	static getOnlineOps() {
+		let onlinePlayersRaw = getOnLinePlayers();
+		if (onlinePlayersRaw !== "null" && onlinePlayersRaw !== "null\n") {
+			JSON.escapeAndParse(onlinePlayersRaw).filter(function(element) {
+				let permissionAndGametypeRaw = getPlayerPermissionAndGametype(element.uuid);
+				if (permissionAndGametypeRaw !== undefined) {
+					let permissionAndGametype = JSON.escapeAndParse(permissionAndGametypeRaw);
+					return permissionAndGametype.permission === 2;
+				}
+			});
+		}
+		return null;
+	}
+	static getOnlineMembers() {
+		let onlinePlayersRaw = getOnLinePlayers();
+		if (onlinePlayersRaw !== "null" && onlinePlayersRaw !== "null\n") {
+			JSON.escapeAndParse(onlinePlayersRaw).filter(function(element) {
+				let permissionAndGametypeRaw = getPlayerPermissionAndGametype(element.uuid);
+				if (permissionAndGametypeRaw !== undefined) {
+					let permissionAndGametype = JSON.escapeAndParse(permissionAndGametypeRaw);
+					return permissionAndGametype.permission === 1;
+				}
+			});
+		}
+		return null;
+	}
+	static getOnlineVisitors() {
+		let onlinePlayersRaw = getOnLinePlayers();
+		if (onlinePlayersRaw !== "null" && onlinePlayersRaw !== "null\n") {
+			JSON.escapeAndParse(onlinePlayersRaw).filter(function(element) {
+				let permissionAndGametypeRaw = getPlayerPermissionAndGametype(element.uuid);
+				if (permissionAndGametypeRaw !== undefined) {
+					let permissionAndGametype = JSON.escapeAndParse(permissionAndGametypeRaw);
+					return permissionAndGametype.permission === 0;
+				}
+			});
+		}
+		return null;
+	}
 	static stop() {
 		runcmd(`stop`);
 	}
 	static lock(timeout = 0) {
-		let pneuAPI_Tmp = JSON.escapeAndParse(getShareData("pneuAPI_Tmp"));
+		let pneuAPI_Tmp = getShareData("pneuAPI_Tmp");
 		pneuAPI_Tmp.serverLock = true;
-		setShareData("pneuAPI_Tmp", JSON.stringify(pneuAPI_Tmp))
+		setShareData("pneuAPI_Tmp", pneuAPI_Tmp);
 		if (timeout !== 0) {
 			setTimeout(function() {
 				this.unlock();
@@ -1291,9 +1351,9 @@ class Server {
 		}
 	}
 	static unlock(timeout = 0) {
-		let pneuAPI_Tmp = JSON.escapeAndParse(getShareData("pneuAPI_Tmp"));
+		let pneuAPI_Tmp = getShareData("pneuAPI_Tmp");
 		pneuAPI_Tmp.serverLock = false;
-		setShareData("pneuAPI_Tmp", JSON.stringify(pneuAPI_Tmp))
+		setShareData("pneuAPI_Tmp", pneuAPI_Tmp);
 		if (timeout !== 0) {
 			setTimeout(function() {
 				this.lock();
@@ -1301,18 +1361,25 @@ class Server {
 		}
 	}
 	static log(message) {
-		return logout(message);
+		logout(message);
+	}
+	static logInfo(message) {
+		log(`[${TimeNow()} INFO] ${messsage}`);
 	}
 	static executeCommand(command) {
 		return runcmd(command);
 	}
-	static getProperties() {
+	static getProperties(key = "") {
 		let file = fileReadAllText("server.properties").replace(/#.*|;.*/g, "");
 		let properties = {};
 		for (let i = 0; i < file.match(/.*=/g).length; i++) {
 			properties[file.match(/.*=/g)[i].slice(0, -1)] = file.match(/=.*/g)[i].slice(1);
 		}
-		return properties;
+		if (key === "") {
+			return properties;
+		} else {
+			return properties[key];
+		}
 	}
 	static getWhitelist() {
 		return JSON.escapeAndParse(fileReadAllText("whitelist.json") ?? "[]");
@@ -1328,17 +1395,17 @@ class Server {
 		return false;
 	}
 	static setTransferForward(address, port = 19132) {
-		let pneuAPI_Tmp = JSON.escapeAndParse(getShareData("pneuAPI_Tmp"));
+		let pneuAPI_Tmp = getShareData("pneuAPI_Tmp");
 		pneuAPI_Tmp.serverForward.enabled = true;
 		pneuAPI_Tmp.serverForward.ip = address;
 		pneuAPI_Tmp.serverForward.port = port;
-		setShareData("pneuAPI_Tmp", JSON.stringify(pneuAPI_Tmp));
+		setShareData("pneuAPI_Tmp", pneuAPI_Tmp);
 		this.transferAllPlayers(address, port);
 	}
 	static unsetTransferForward() {
-		let pneuAPI_Tmp = JSON.escapeAndParse(getShareData("pneuAPI_Tmp"));
+		let pneuAPI_Tmp = getShareData("pneuAPI_Tmp");
 		pneuAPI_Tmp.serverForward.enabled = false;
-		setShareData("pneuAPI_Tmp", JSON.stringify(pneuAPI_Tmp));
+		setShareData("pneuAPI_Tmp", pneuAPI_Tmp);
 	}
 }
 pneuAPI.Server = Server;
@@ -1358,4 +1425,4 @@ class Level {
 }
 pneuAPI.Level = Level;
 setShareData("pneuAPI", pneuAPI);
-setShareData("loadPneuAPI", `JSON.escapeAndParse = getShareData("pneuAPI").escapeAndParse; var setInterval = getShareData("pneuAPI").setInterval, Command = getShareData("pneuAPI").Command, SimpleForm = getShareData("pneuAPI").SimpleForm, ModalForm = getShareData("pneuAPI").ModalForm, CustomForm = getShareData("pneuAPI").CustomForm, NBT = getShareData("pneuAPI").NBT, NamedTag = getShareData("pneuAPI").NamedTag, ByteTag = getShareData("pneuAPI").ByteTag, ShortTag = getShareData("pneuAPI").ShortTag, IntTag = getShareData("pneuAPI").IntTag, LongTag = getShareData("pneuAPI").LongTag, FloatTag = getShareData("pneuAPI").FloatTag, DoubleTag = getShareData("pneuAPI").DoubleTag, ByteArrayTag = getShareData("pneuAPI").ByteArrayTag, StringTag = getShareData("pneuAPI").StringTag, ListTag = getShareData("pneuAPI").ListTag, CompoundTag = getShareData("pneuAPI").CompoundTag, IntArrayTag = getShareData("pneuAPI").IntArrayTag, Player = getShareData("pneuAPI").Player, Server = getShareData("pneuAPI").Server, Block = getShareData("pneuAPI").Block, Level = getShareData("pneuAPI").Level;`);
+setShareData("loadPneuAPI", `JSON.escapeAndParse = getShareData("pneuAPI").escapeAndParse; Object.prototype.serialize = getShareData("pneuAPI").serialize; var setInterval = getShareData("pneuAPI").setInterval, Command = getShareData("pneuAPI").Command, SimpleForm = getShareData("pneuAPI").SimpleForm, ModalForm = getShareData("pneuAPI").ModalForm, CustomForm = getShareData("pneuAPI").CustomForm, NBT = getShareData("pneuAPI").NBT, NamedTag = getShareData("pneuAPI").NamedTag, ByteTag = getShareData("pneuAPI").ByteTag, ShortTag = getShareData("pneuAPI").ShortTag, IntTag = getShareData("pneuAPI").IntTag, LongTag = getShareData("pneuAPI").LongTag, FloatTag = getShareData("pneuAPI").FloatTag, DoubleTag = getShareData("pneuAPI").DoubleTag, ByteArrayTag = getShareData("pneuAPI").ByteArrayTag, StringTag = getShareData("pneuAPI").StringTag, ListTag = getShareData("pneuAPI").ListTag, CompoundTag = getShareData("pneuAPI").CompoundTag, IntArrayTag = getShareData("pneuAPI").IntArrayTag, Player = getShareData("pneuAPI").Player, Server = getShareData("pneuAPI").Server, Block = getShareData("pneuAPI").Block, Level = getShareData("pneuAPI").Level;);;`);
